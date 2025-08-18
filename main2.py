@@ -1,3 +1,5 @@
+from enum import EnumType
+
 import flet as ft
 import flet_audio as fa
 
@@ -5,7 +7,7 @@ import warnings
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
-# STREAM_URL = 'http://192.99.41.102:5623/parqueverde'
+# STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1&type=mp3'
 INSTAGRAM_URL = 'http://instagram.com/'
 WHATSAPP_URL = 'http://wa.me/558497015547'
 LOGO_URL = 'https://drive.google.com/uc?export=view&id=1t_Q8u_ouwmjctpgSGzDMFnYhe8x8DKEb'
@@ -23,12 +25,23 @@ def main(page: ft.Page):
     page.window.height = 640
 
     # ---------- Áudio: controlado por um componente não-visual ----------
+
+    obj_audio = ft.Ref[ft.Audio]()
     # O controle Audio não é exibido; adicionamos no overlay e controlamos via código.
+
     audio = fa.Audio(
         src=STREAM_URL,
         autoplay=True,
         volume=1.0,
+        # ref=obj_audio,
         # on_state_changed atualiza a UI conforme o estado do player
+    )
+
+    audio_new = fa.Audio(
+        src=STREAM_URL,
+        autoplay=True,
+        volume=1.0,
+        ref=obj_audio,
     )
 
     page.overlay.append(audio)
@@ -36,6 +49,7 @@ def main(page: ft.Page):
     # Estado simples do player para atualizar ícone/label
     is_playing = ft.Ref[bool]()
     is_playing.current = True # presume que iniciou tocando (autoplay)
+
 
     # botão dinâmico
     play_icon_button = ft.Ref[ft.IconButton]()
@@ -65,23 +79,52 @@ def main(page: ft.Page):
     audio.on_state_changed = on_state_change
 
     def toggle_play_pause(_):
+
+        nonlocal audio
         """
         Alterna Play/Pause. Se o stream tiver sido interrompido,
         chamar play() novamente garante retomada.
         """
         try:
+
+            # if is_playing.current:
+            #     audio.pause()
+            #
+            # else:
+
+            #     # Se estava pausado/completed/stopped, iniciar/reiniciar:
+            #     audio.play()
             if is_playing.current:
-                audio.pause()
+                print('is_playing.curren')
+                if fa.AudioState.PLAYING:
+                    print('Playing stopped. A')
+                    # audio.release()
+
+                if obj_audio.current.on_state_changed == fa.AudioState.STOPPED:
+                    print('Playing stopped. B')
+                    # obj_audio.current.release()
 
             else:
-                # Se estava pausado/completed/stopped, iniciar/reiniciar:
-                audio.play()
+                print('Entrou no else')
+                if audio.on_state_changed == fa.AudioState.PLAYING:
+                    print('Playing . A')
+                    # page.overlay.append(obj_audio.current)
+                    # obj_audio.current.play()
+                    # audio_new = fa.Audio(src=STREAM_URL, autoplay=True, volume=1.0)
+                    # audio = audio_new
+                if obj_audio.current.on_state_changed == fa.AudioState.PLAYING:
+                    print('Playing. A')
+                    # page.overlay.append(audio)
+                    # audio.play()
+
+            audio.on_state_changed = toggle_play_pause
 
         except Exception as ex:
             # Em caso de falha de conexão, tentar reiniciar o stream.
             print(f'Erro ao alternar player: {ex}')
             audio.src = STREAM_URL
             audio.play()
+
 
     def toggle_stop(_):
         nonlocal audio
