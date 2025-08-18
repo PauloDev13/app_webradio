@@ -25,31 +25,18 @@ def main(page: ft.Page):
     page.window.height = 640
 
     # ---------- Áudio: controlado por um componente não-visual ----------
-
-    obj_audio = ft.Ref[ft.Audio]()
     # O controle Audio não é exibido; adicionamos no overlay e controlamos via código.
 
     audio = fa.Audio(
         src=STREAM_URL,
         autoplay=True,
         volume=1.0,
-        # ref=obj_audio,
         # on_state_changed atualiza a UI conforme o estado do player
     )
-
-    audio_new = fa.Audio(
-        src=STREAM_URL,
-        autoplay=True,
-        volume=1.0,
-        ref=obj_audio,
-    )
-
-    page.overlay.append(audio)
 
     # Estado simples do player para atualizar ícone/label
     is_playing = ft.Ref[bool]()
     is_playing.current = True # presume que iniciou tocando (autoplay)
-
 
     # botão dinâmico
     play_icon_button = ft.Ref[ft.IconButton]()
@@ -87,58 +74,26 @@ def main(page: ft.Page):
         """
         try:
 
-            # if is_playing.current:
-            #     audio.pause()
-            #
-            # else:
-
-            #     # Se estava pausado/completed/stopped, iniciar/reiniciar:
-            #     audio.play()
             if is_playing.current:
-                print('is_playing.curren')
-                if fa.AudioState.PLAYING:
-                    print('Playing stopped. A')
-                    # audio.release()
+                audio.pause()
 
-                if obj_audio.current.on_state_changed == fa.AudioState.STOPPED:
-                    print('Playing stopped. B')
-                    # obj_audio.current.release()
+                new_audio = fa.Audio(
+                    src=STREAM_URL,
+                    volume=1.0
+                )
 
+                audio = new_audio
+                page.overlay.append(audio)
+                audio.on_state_changed = on_state_change
             else:
-                print('Entrou no else')
-                if audio.on_state_changed == fa.AudioState.PLAYING:
-                    print('Playing . A')
-                    # page.overlay.append(obj_audio.current)
-                    # obj_audio.current.play()
-                    # audio_new = fa.Audio(src=STREAM_URL, autoplay=True, volume=1.0)
-                    # audio = audio_new
-                if obj_audio.current.on_state_changed == fa.AudioState.PLAYING:
-                    print('Playing. A')
-                    # page.overlay.append(audio)
-                    # audio.play()
+                # Se estava pausado/completed/stopped, iniciar/reiniciar:
+                audio.play()
 
-            audio.on_state_changed = toggle_play_pause
-
-        except Exception as ex:
+        except Exception as e:
             # Em caso de falha de conexão, tentar reiniciar o stream.
-            print(f'Erro ao alternar player: {ex}')
+            print(f'Erro ao alternar player: {e}')
             audio.src = STREAM_URL
             audio.play()
-
-
-    def toggle_stop(_):
-        nonlocal audio
-
-        is_playing.current = True
-
-        audio.release()
-
-        new_audio = fa.Audio(
-            src=STREAM_URL,
-        )
-        page.overlay.append(new_audio)
-        audio = new_audio
-
 
     # Abrir links externos (Instagram/WhatsApp) usando o launcher nativo
     def open_instagram(_):
@@ -148,7 +103,7 @@ def main(page: ft.Page):
         page.launch_url(WHATSAPP_URL, web_window_name='_blank')
 
     # Adiciona o player ao overlay da página.
-    # page.overlay.append(audio)
+    page.overlay.append(audio)
 
     # ---------- UI: Gradiente de fundo ----------
     background = ft.Container(
@@ -188,33 +143,21 @@ def main(page: ft.Page):
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
                             ft.Container(
-                                width=150,
-                                height=50,
+                                width=60,
+                                height=60,
                                 padding=ft.padding.only(left=5, right=5),
                                 bgcolor=ft.Colors.with_opacity(0.12, ft.Colors.WHITE),
                                 border_radius=100,
                                 alignment=ft.alignment.center,
-                                content=ft.Row(
-                                    alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                                    controls=[
-                                        ft.IconButton(
-                                            icon=ft.Icons.PLAY_ARROW_ROUNDED,
-                                            padding=5,
-                                            bgcolor=ft.Colors.BLUE_900,
-                                            icon_size=30,
-                                            ref=play_icon_button,
-                                            on_click=toggle_play_pause,
+                                content= ft.IconButton(
+                                    icon=ft.Icons.PLAY_ARROW_ROUNDED,
+                                    padding=5,
+                                    bgcolor=ft.Colors.BLUE_900,
+                                    icon_size=30,
+                                    ref=play_icon_button,
+                                    on_click=toggle_play_pause,
 
-                                        ),
-                                        ft.IconButton(
-                                            icon=ft.Icons.STOP_ROUNDED,
-                                            padding=5,
-                                            bgcolor=ft.Colors.BLUE_900,
-                                            icon_size=30,
-                                            on_click=toggle_stop,
-                                        )
-                                    ]
-                                )
+                                ),
 
                             ),
 
@@ -290,7 +233,7 @@ def main(page: ft.Page):
     try:
         audio.play()
     except Exception as ex:
-        pass
+        print('Error', ex)
 
 
 # ft.app(target=main)
