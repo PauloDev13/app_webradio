@@ -12,7 +12,7 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
 INSTAGRAM_URL = 'https://instagram.com/'
 WHATSAPP_URL = 'https://wa.me/558497015547'
-BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1AFPQ1qvJ7jYfQP7V_QclaEACNpQtyKuQ"
+BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA"
 
 def main(page: ft.Page):
     # ---------- Configurações básicas da página ----------
