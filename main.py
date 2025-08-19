@@ -231,10 +231,10 @@ def main(page: ft.Page):
     page.add(safe)
 
     # Se desejar garantir autoplay em alguns dispositivos, forçar um play() após o carregamento:
-    # try:
-    #     audio.play()
-    # except Exception as ex:
-    #     print('Error', ex)
+    try:
+        audio.play()
+    except Exception as ex:
+        print('Error', ex)
 
 
 # ft.app(target=main)
