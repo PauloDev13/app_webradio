@@ -1,143 +1,244 @@
-from xml.dom import NoModificationAllowedErr
+from enum import EnumType
 
 import flet as ft
 import flet_audio as fa
-# import requests
-
-
 
 import warnings
 
+from flet.core.alignment import Alignment
+
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
-LOGO_URL = "https://drive.google.com/uc?export=view&id=1t_Q8u_ouwmjctpgSGzDMFnYhe8x8DKEb"
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
-JSON_URL = 'https://usa13.fastcast4u.com/rpc/parqueverde/streaminfo.get'
+INSTAGRAM_URL = 'https://instagram.com/'
+WHATSAPP_URL = 'https://wa.me/558497015547'
+BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1AFPQ1qvJ7jYfQP7V_QclaEACNpQtyKuQ"
 
 def main(page: ft.Page):
-
-    page.title = 'Webrádio Parque Verde'
+    # ---------- Configurações básicas da página ----------
+    page.title = 'Sua Web Radio'
     page.theme_mode = ft.ThemeMode.DARK
-    page.horizontal_alignment = 'center'
-    page.vertical_alignment = 'center'
     page.padding = 0
+    page.spacing = 0
+    page.window.bgcolor = ft.Colors.BLACK
+    page.bgcolor = ft.Colors.TRANSPARENT
+    page.fonts = {} # (opcional) adicione fontes customizadas aqui
+    page.window.width = 1080
+    page.window.height = 1920
 
-    # Player
+    # ---------- Áudio: controlado por um componente não-visual ----------
+    # O controle Audio não é exibido; adicionamos no overlay e controlamos via código.
+
     audio = fa.Audio(
         src=STREAM_URL,
+        autoplay=True,
+        volume=1.0,
+        # on_state_changed atualiza a UI conforme o estado do player
     )
 
+    # Estado simples do player para atualizar ícone/label
+    is_playing = ft.Ref[bool]()
+    is_playing.current = True # presume que iniciou tocando (autoplay)
+
+    # botão dinâmico
+    play_icon_button = ft.Ref[ft.IconButton]()
+
+    # ---------- Handlers ----------
+    def on_state_change(e):
+
+        state = getattr(e, 'state', None)
+
+        if state in (fa.AudioState.PAUSED, fa.AudioState.STOPPED, fa.AudioState.COMPLETED):
+            print(f'State changed to {state} if do on_state_change')
+            is_playing.current = False
+
+            if play_icon_button.current:
+                if play_icon_button.current:
+                    play_icon_button.current.icon = ft.Icons.PLAY_ARROW_ROUNDED
+
+        elif state == fa.AudioState.PLAYING:
+            print(f'State changed to {state} no else do on_state_change')
+            is_playing.current = True
+
+            if play_icon_button.current:
+                play_icon_button.current.icon = ft.Icons.PAUSE_ROUNDED
+
+        page.update()
+
+    audio.on_state_changed = on_state_change
+
+    def toggle_play_pause(_):
+
+        nonlocal audio
+        """
+        Alterna Play/Pause. Se o stream tiver sido interrompido,
+        chamar play() novamente garante retomada.
+        """
+        try:
+            if is_playing.current:
+                audio.pause()
+
+                new_audio = fa.Audio(
+                    src=STREAM_URL,
+                    volume=1.0
+                )
+
+                audio = new_audio
+                page.overlay.append(audio)
+                audio.on_state_changed = on_state_change
+            else:
+                # Se estava pausado/completed/stopped, iniciar/reiniciar:
+                audio.play()
+
+        except Exception as e:
+            # Em caso de falha de conexão, tentar reiniciar o stream.
+            print(f'Erro ao alternar player: {e}')
+            audio.src = STREAM_URL
+            audio.play()
+
+    # Abrir links externos (Instagram/WhatsApp) usando o launcher nativo
+    def open_instagram(_):
+        page.launch_url(INSTAGRAM_URL, web_window_name='_blank')
+
+    def open_whatsapp(_):
+        page.launch_url(WHATSAPP_URL, web_window_name='_blank')
+
+    # Adiciona o player ao overlay da página.
     page.overlay.append(audio)
 
-    # wave = SoundWave(color=ft.Colors.GREEN, bar_count=8)
-
-    def start_radio(e):
-        audio.play()
-
-
-    def pause_radio(e):
-        audio.pause()
-
-    def stop_radio(e):
-        nonlocal audio
-        audio.release()
-
-        new_audio = fa.Audio(
-            src=STREAM_URL,
-        )
-        page.overlay.append(new_audio)
-
-        audio = new_audio
-
-
-    # Componentes visuais
-    title = ft.Text(
-        value='Estação Parque Verde',
-        size=28,
-        weight=ft.FontWeight.BOLD,
-        color=ft.Colors.WHITE,
-        text_align=ft.TextAlign.CENTER
-    )
-
-    subtitle = ft.Text(
-        value="WebRádio - Parnamirim/RN",
-        size=18,
-        weight=ft.FontWeight.BOLD,
-        color=ft.Colors.WHITE70,
-        text_align=ft.TextAlign.CENTER
-    )
-
-    logo = ft.Image(
-        src=LOGO_URL,
-        width=200,
-        height=200,
-    )
-
-    control_row = ft.Row(
-        [
-            ft.Container(
-                content=ft.IconButton(
-                    icon=ft.Icons.PLAY_ARROW,
-                    icon_color=ft.Colors.BLUE_900,
-                    icon_size=40,
-                    on_click=start_radio,
-                ),
-                bgcolor=ft.Colors.BLUE_400,
-                shape=ft.BoxShape.CIRCLE,
-            ),
-
-            ft.Container(
-                content=ft.IconButton(
-                    icon=ft.Icons.PAUSE,
-                     icon_color=ft.Colors.BLUE_900,
-                    icon_size=40,
-                    on_click=pause_radio,
-                ),
-                bgcolor=ft.Colors.BLUE_400,
-                shape=ft.BoxShape.CIRCLE,
-            ),
-
-            ft.Container(
-                content=ft.IconButton(
-                    icon=ft.Icons.STOP,
-                    icon_color=ft.Colors.BLUE_900,
-                    icon_size=40,
-                    on_click=stop_radio,
-                ),
-                bgcolor=ft.Colors.BLUE_400,
-                shape=ft.BoxShape.CIRCLE,
-            )
-        ],
-        alignment=ft.MainAxisAlignment.CENTER,
-        spacing=20,
-    )
-
-
-    # Layout principal
-    page.add(
-        ft.Container(
+    # ---------- UI ----------
+    background = ft.Container(
+        expand=True,
+            image=ft.DecorationImage(
+                src=BACKGROUND_URL,
+                fit=ft.ImageFit.COVER,
+                alignment=ft.alignment.center,
+                repeat=ft.ImageRepeat.NO_REPEAT,
+        ),
+        padding=ft.padding.symmetric(horizontal=24, vertical=24),
+        content=ft.Column(
             expand=True,
-            gradient=ft.LinearGradient(
-                begin=ft.alignment.top_left,
-                end=ft.alignment.bottom_right,
-                colors=[
-                    "#0d47a1", "#1976d2", "#42a5f5"
-                ]
-            ),
-            alignment=ft.alignment.center,
-            content=ft.Column(
-                controls=[
-                    title,
-                    subtitle,
-                    logo,
-                    # wave,
-                    control_row,
-                ],
-                alignment=ft.MainAxisAlignment.CENTER,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                spacing=15,
-            ),
+            horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
+            alignment=ft.MainAxisAlignment.START,
+            controls=[
+                ft.Container(
+                    alignment=ft.alignment.center,
+                        content=ft.Text(
+                        value='Online',
+                        size=32,
+                        weight=ft.FontWeight.BOLD,
+                        text_align=ft.alignment.center,
+                        color=ft.Colors.with_opacity(0.8, '#00ebff')
+                    ),
+                ),
+
+                ft.Container(
+                    padding=ft.padding.only(top=80),
+                    content=ft.Column(
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        controls=[
+                            ft.Container(
+                                width=100,
+                                height=100,
+                                padding=ft.padding.only(left=5, right=5),
+                                bgcolor=ft.Colors.with_opacity(0.3, '#00ebff'),
+                                border_radius=100,
+                                alignment=ft.alignment.center,
+                                content= ft.IconButton(
+                                    icon=ft.Icons.PLAY_ARROW_ROUNDED,
+                                    padding=5,
+                                    bgcolor=ft.Colors.with_opacity(0.8,'#001c2b'),
+                                    icon_size=60,
+                                    ref=play_icon_button,
+                                    on_click=toggle_play_pause,
+                                ),
+                            ),
+
+    #                         # ---------- Títulos "Tocando agora, Artista e M´suica" ----------
+                            ft.Container(
+                                padding=ft.padding.only(top=120),
+                                content=ft.Column(
+                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                    controls=[
+                                        ft.Text(
+                                            value='Tocando agora',
+                                            color='#00ebff',
+                                            size=15,
+                                            weight=ft.FontWeight.BOLD,
+                                            text_align=ft.TextAlign.CENTER,
+                                        ),
+                                        ft.Text(
+                                            value='Artista:',
+                                            color='#00ebff',
+                                            size=12,
+                                            text_align=ft.TextAlign.CENTER,
+                                        ),
+                                        ft.Text(
+                                            value='Música:',
+                                            color='#00ebff',
+                                            size=12,
+                                            text_align=ft.TextAlign.CENTER,
+                                        ),
+                                    ],
+                                ),
+                            ),
+                        ]
+                    )
+                ),
+
+    #             # ---------- Espaçador para empurrar os botões sociais para o rodapé ----------
+                ft.Container(expand=True),
+                ft.Container(
+                    padding=ft.padding.only(bottom=8),
+                    content=ft.ResponsiveRow(
+                        columns=12,
+                        controls=[
+                            ft.Container(
+                                col=6,
+                                content=ft.FilledTonalButton(
+                                    icon=ft.Icons.CAMERA_ALT_ROUNDED,  # ícone genérico para Instagram
+                                    icon_color='#00ebff',
+                                    text='Instagram',
+                                    on_click=open_instagram,
+                                    style=ft.ButtonStyle(
+                                        color='#00ebff',
+                                        bgcolor=ft.Colors.with_opacity(0.18, '#00ebff'),
+                                    ),
+                                ),
+                            ),
+                            ft.Container(
+                                col=6,
+                                content=ft.FilledTonalButton(
+                                    icon=ft.Icons.CHAT_ROUNDED,  # ícone genérico para WhatsApp
+                                    icon_color='#00ebff',
+                                    text='WhatsApp',
+                                    on_click=open_whatsapp,
+                                    style=ft.ButtonStyle(
+                                        color='#00ebff',
+                                        bgcolor=ft.Colors.with_opacity(0.18, '#00ebff'),
+                                    ),
+                                ),
+                            ),
+                        ],
+                    ),
+                ),
+
+            ]
         )
     )
 
-ft.app(target=main)
+    safe = ft.SafeArea(content=background, expand=True)
+    page.add(safe)
+
+    # Se desejar garantir autoplay em alguns dispositivos, forçar um play() após o carregamento:
+    # try:
+    #     audio.play()
+    # except Exception as ex:
+    #     print('Error', ex)
+
+
+# ft.app(target=main)
+if __name__ == '__main__':
+    ft.app(target=main,view=ft.AppView.FLET_APP)
+    # Observação:
+    # - Para Android, o empacotamento usa build de app nativo; ver instruções ao final.
