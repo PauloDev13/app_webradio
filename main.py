@@ -4,7 +4,6 @@ import flet as ft
 import flet_audio as fa
 import requests
 import asyncio
-import json
 
 import warnings
 
@@ -14,11 +13,13 @@ warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
 JSON_URL = 'https://usa13.fastcast4u.com/rpc/parqueverde/streaminfo.get'
-# STREAM_URL = 'http://192.99.41.102/proxy/parqueverde?mp=/stream'
 INSTAGRAM_URL = 'https://instagram.com/'
 WHATSAPP_URL = 'https://wa.me/558497015547'
-# BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA"
-BACKGROUND_URL = 'background.png'
+USE_LOCAL_ASSET = True
+BACKGROUND_LOCAL = 'background.png'
+BACKGROUND_URL = (
+    BACKGROUND_LOCAL if USE_LOCAL_ASSET else 'https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA'
+)
 
 def main(page: ft.Page):
     # ---------- Configurações básicas da página ----------
@@ -52,6 +53,7 @@ def main(page: ft.Page):
     # botão dinâmico
     play_icon_button = ft.Ref[ft.IconButton]()
 
+    # text_state_play = ft.Ref[ft.Text]()
     text_artist = ft.Ref[ft.Text]()
     text_music = ft.Ref[ft.Text]()
 
@@ -68,12 +70,18 @@ def main(page: ft.Page):
                 if play_icon_button.current:
                     play_icon_button.current.icon = ft.Icons.PLAY_ARROW_ROUNDED
 
+                    # text_state_play.current.value = 'Em Pausa...'
+                    # text_state_play.current.update()
+
         elif state == fa.AudioState.PLAYING:
             print(f'State changed to {state} no else do on_state_change')
             is_playing.current = True
 
             if play_icon_button.current:
                 play_icon_button.current.icon = ft.Icons.PAUSE_ROUNDED
+
+                # text_state_play.current.value = 'Tocando...'
+                # text_state_play.current.update()
 
         page.update()
 
@@ -131,7 +139,7 @@ def main(page: ft.Page):
                 print("Aviso: JSON não contém 'artist' ou 'title'")
                 return None, None
 
-            print("executou")
+            # print("executou")
             return artist, title
 
         except requests.exceptions.Timeout:
@@ -154,7 +162,7 @@ def main(page: ft.Page):
 
             if artist and title:
                 text_artist.current.value = f'Artista: {artist}'
-                text_music.current.value = f'Music: {title}'
+                text_music.current.value = f'Musica: {title}'
             else:
                 text_artist.current.value = 'Artista: Sem informações'
                 text_music.current.value = 'Música: Sem informações'
@@ -177,31 +185,31 @@ def main(page: ft.Page):
     # ---------- UI ----------
     layout = ft.Container(
         expand=True,
+        padding=ft.padding.symmetric(horizontal=30, vertical=30),
             image=ft.DecorationImage(
                 src=BACKGROUND_URL,
                 fit=ft.ImageFit.COVER,
                 alignment=ft.alignment.center,
                 repeat=ft.ImageRepeat.NO_REPEAT,
         ),
-        padding=ft.padding.symmetric(horizontal=24, vertical=24),
         content=ft.Column(
-            expand=True,
             horizontal_alignment=ft.CrossAxisAlignment.STRETCH,
             alignment=ft.MainAxisAlignment.START,
             controls=[
                 ft.Container(
                     alignment=ft.alignment.center,
                         content=ft.Text(
-                        value='Online',
-                        size=25,
+                        value='Web Rádio',
+                        size=24,
                         weight=ft.FontWeight.BOLD,
                         text_align=ft.alignment.center,
-                        color=ft.Colors.with_opacity(0.8, '#00ebff')
+                        color=ft.Colors.with_opacity(0.8, '#00ebff'),
+                        # ref=text_state_play
                     ),
                 ),
 
                 ft.Container(
-                    padding=ft.padding.only(top=80),
+                    padding=ft.padding.only(top=110),
                     content=ft.Column(
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
@@ -222,16 +230,22 @@ def main(page: ft.Page):
                                 ),
                             ),
 
+                            ft.Container(expand=True, margin=50),
+
     #                         # ---------- Títulos "Tocando agora, Artista e M´suica" ----------
                             ft.Container(
-                                padding=ft.padding.only(top=120),
+                                width=350,
+                                padding=ft.padding.only(top=20, bottom=20),
+                                border_radius=20,
+                                bgcolor=ft.Colors.with_opacity(0.3, '#000000'),
                                 content=ft.Column(
+                                    expand=True,
                                     horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                                     controls=[
                                         ft.Text(
-                                            value='Tocando agora',
+                                            value='Tocando agora...',
                                             color='#00ebff',
-                                            size=15,
+                                            size=18,
                                             weight=ft.FontWeight.BOLD,
                                             text_align=ft.TextAlign.CENTER,
                                         ),
@@ -239,7 +253,8 @@ def main(page: ft.Page):
                                         ft.Text(
                                             value='',
                                             color='#00ebff',
-                                            size=12,
+                                            size=14,
+                                            weight=ft.FontWeight.BOLD,
                                             text_align=ft.TextAlign.CENTER,
                                             ref=text_artist,
                                         ),
@@ -247,7 +262,8 @@ def main(page: ft.Page):
                                         ft.Text(
                                             value='',
                                             color='#00ebff',
-                                            size=12,
+                                            size=14,
+                                            weight=ft.FontWeight.BOLD,
                                             text_align=ft.TextAlign.CENTER,
                                             ref=text_music
                                         ),
