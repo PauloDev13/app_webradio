@@ -2,6 +2,9 @@ from enum import EnumType
 
 import flet as ft
 import flet_audio as fa
+import requests
+import asyncio
+import json
 
 import warnings
 
@@ -10,9 +13,12 @@ from flet.core.alignment import Alignment
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
+JSON_URL = 'https://usa13.fastcast4u.com/rpc/parqueverde/streaminfo.get'
+# STREAM_URL = 'http://192.99.41.102/proxy/parqueverde?mp=/stream'
 INSTAGRAM_URL = 'https://instagram.com/'
 WHATSAPP_URL = 'https://wa.me/558497015547'
-BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA"
+# BACKGROUND_URL = "https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA"
+BACKGROUND_URL = 'background.png'
 
 def main(page: ft.Page):
     # ---------- Configurações básicas da página ----------
@@ -23,12 +29,15 @@ def main(page: ft.Page):
     page.window.bgcolor = ft.Colors.BLACK
     page.bgcolor = ft.Colors.TRANSPARENT
     page.fonts = {} # (opcional) adicione fontes customizadas aqui
-    page.window.width = 1080
-    page.window.height = 1920
+    page.window.width = 400
+    page.window.min_width = 400
+    page.window.max_width = 400
+    page.window.height = 700
+    page.window.min_height = 700
+    page.window.max_height = 720
 
     # ---------- Áudio: controlado por um componente não-visual ----------
     # O controle Audio não é exibido; adicionamos no overlay e controlamos via código.
-
     audio = fa.Audio(
         src=STREAM_URL,
         autoplay=True,
@@ -42,6 +51,9 @@ def main(page: ft.Page):
 
     # botão dinâmico
     play_icon_button = ft.Ref[ft.IconButton]()
+
+    text_artist = ft.Ref[ft.Text]()
+    text_music = ft.Ref[ft.Text]()
 
     # ---------- Handlers ----------
     def on_state_change(e):
@@ -85,16 +97,72 @@ def main(page: ft.Page):
 
                 audio = new_audio
                 page.overlay.append(audio)
+
                 audio.on_state_changed = on_state_change
             else:
                 # Se estava pausado/completed/stopped, iniciar/reiniciar:
                 audio.play()
+
 
         except Exception as e:
             # Em caso de falha de conexão, tentar reiniciar o stream.
             print(f'Erro ao alternar player: {e}')
             audio.src = STREAM_URL
             audio.play()
+
+    def update_song_info():
+        try:
+            # Busca dados na API
+            response = requests.get(JSON_URL, timeout=(10, 15))
+            response.raise_for_status()  # dispara erro HTTP se status != 200
+
+            # Converte em JSON
+            data = response.json()
+
+            # Extrai track (se estrutura esperada existir)
+            track = data.get("data", [{}])[0].get("track", {})
+
+            # Extrai valores com fallback
+            artist = track.get("artist")
+            title = track.get("title")
+
+            # Verificação final
+            if not artist or not title:
+                print("Aviso: JSON não contém 'artist' ou 'title'")
+                return None, None
+
+            print("executou")
+            return artist, title
+
+        except requests.exceptions.Timeout:
+            print("Erro: timeout na requisição")
+        except requests.exceptions.ConnectionError:
+            print("Erro: falha de conexão com o servidor")
+        except requests.exceptions.HTTPError as e:
+            print(f"Erro HTTP: {e}")
+        except ValueError:
+            print("Erro: resposta não é JSON válido")
+        except Exception as e:
+            print(f"Erro inesperado: {e}")
+
+        # Retorno seguro em caso de erro
+        return None, None
+
+    async def loop_update():
+        while True:
+            artist, title = update_song_info()
+
+            if artist and title:
+                text_artist.current.value = f'Artista: {artist}'
+                text_music.current.value = f'Music: {title}'
+            else:
+                text_artist.current.value = 'Artista: Sem informações'
+                text_music.current.value = 'Música: Sem informações'
+
+            text_artist.current.update()
+            text_music.current.update()
+
+            await asyncio.sleep(10)
 
     # Abrir links externos (Instagram/WhatsApp) usando o launcher nativo
     def open_instagram(_):
@@ -107,7 +175,7 @@ def main(page: ft.Page):
     page.overlay.append(audio)
 
     # ---------- UI ----------
-    background = ft.Container(
+    layout = ft.Container(
         expand=True,
             image=ft.DecorationImage(
                 src=BACKGROUND_URL,
@@ -125,7 +193,7 @@ def main(page: ft.Page):
                     alignment=ft.alignment.center,
                         content=ft.Text(
                         value='Online',
-                        size=32,
+                        size=25,
                         weight=ft.FontWeight.BOLD,
                         text_align=ft.alignment.center,
                         color=ft.Colors.with_opacity(0.8, '#00ebff')
@@ -167,17 +235,21 @@ def main(page: ft.Page):
                                             weight=ft.FontWeight.BOLD,
                                             text_align=ft.TextAlign.CENTER,
                                         ),
+
                                         ft.Text(
-                                            value='Artista:',
+                                            value='',
                                             color='#00ebff',
                                             size=12,
                                             text_align=ft.TextAlign.CENTER,
+                                            ref=text_artist,
                                         ),
+
                                         ft.Text(
-                                            value='Música:',
+                                            value='',
                                             color='#00ebff',
                                             size=12,
                                             text_align=ft.TextAlign.CENTER,
+                                            ref=text_music
                                         ),
                                     ],
                                 ),
@@ -227,7 +299,7 @@ def main(page: ft.Page):
         )
     )
 
-    safe = ft.SafeArea(content=background, expand=True)
+    safe = ft.SafeArea(content=layout, expand=True)
     page.add(safe)
 
     # Se desejar garantir autoplay em alguns dispositivos, forçar um play() após o carregamento:
@@ -236,9 +308,14 @@ def main(page: ft.Page):
     except Exception as ex:
         print('Error', ex)
 
+    page.run_task(loop_update)
 
 # ft.app(target=main)
 if __name__ == '__main__':
-    ft.app(target=main,view=ft.AppView.FLET_APP)
+    ft.app(
+        target=main,
+        view=ft.AppView.FLET_APP,
+        assets_dir='assets'
+    )
     # Observação:
     # - Para Android, o empacotamento usa build de app nativo; ver instruções ao final.
