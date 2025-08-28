@@ -1,3 +1,28 @@
 app:
-  icon: assets/icon.png
-  splash: assets/splash.png
+  name: Webrádio
+  description: App desenvolvido em Flet
+  version: 1.0.0
+  organization: com.webradio
+  # Aqui você pode definir uma cor fallback (caso a imagem não carregue em algum device)
+  bgcolor: "#001c2b"
+
+  flt_platforms:
+    android:
+      package: com.webradio.android
+      icon: assets/icon.png
+      splash:
+        image: assets/splash.png        # imagem central
+        color: "#001c2a"                # cor de fundo atrás da imagem
+        android12:
+          image: assets/splash.png
+          color: "#001c2a"
+          branding: assets/background.png   # opcional: imagem full-screen como fundo
+    ios:
+      bundle_id: com.webradio.ios
+      icon: assets/icon.png
+      splash:
+        image: assets/splash.png
+        color: "#001c2a"
+
+#  icon: assets/icon.png
+#  splash: assets/splash.png
