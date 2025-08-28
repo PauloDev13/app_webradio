@@ -7,14 +7,16 @@ import warnings
 
 warnings.filterwarnings('ignore', category=DeprecationWarning)
 
+# Variáveis globais
 STREAM_URL = 'https://usa13.fastcast4u.com/proxy/parqueverde?mp=/1'
 JSON_URL = 'https://usa13.fastcast4u.com/rpc/parqueverde/streaminfo.get'
 INSTAGRAM_URL = 'https://instagram.com/'
 WHATSAPP_URL = 'https://wa.me/558487015547'
-USE_LOCAL_ASSET = False
+USE_LOCAL_ASSET = True
 BACKGROUND_LOCAL = 'background.png'
 BACKGROUND_URL = (
-    BACKGROUND_LOCAL if USE_LOCAL_ASSET else 'https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA'
+    BACKGROUND_LOCAL if USE_LOCAL_ASSET
+    else 'https://drive.google.com/uc?export=view&id=1bU2-ZN55sF_V5FRnXY6DmsU_FcEctjnA'
 )
 
 def main(page: ft.Page):
@@ -23,7 +25,7 @@ def main(page: ft.Page):
     page.theme_mode = ft.ThemeMode.DARK
     page.padding = 0
     page.spacing = 0
-    page.window.bgcolor = ft.Colors.BLACK
+    page.window.bgcolor = "001c2a"
     page.bgcolor = ft.Colors.TRANSPARENT
     page.fonts = {} # (opcional) adicione fontes customizadas aqui
     page.window.width = 400
@@ -62,7 +64,7 @@ def main(page: ft.Page):
         # on_state_changed atualiza a UI conforme o estado do player
     )
 
-    # Estado simples do player para atualizar ícone/label
+    # Estado simples do player para atualizar ícone
     is_playing = ft.Ref[bool]()
     is_playing.current = True # presume que iniciou tocando (autoplay)
 
@@ -87,7 +89,7 @@ def main(page: ft.Page):
                     play_icon_button.current.icon = ft.Icons.PLAY_ARROW_ROUNDED
 
         elif state == fa.AudioState.PLAYING:
-            print(f'State changed to {state} no else do on_state_change')
+            # print(f'State changed to {state} no else do on_state_change')
             is_playing.current = True
 
             if play_icon_button.current:
@@ -100,10 +102,9 @@ def main(page: ft.Page):
     def toggle_play_pause(_):
 
         nonlocal audio
-        """
-        Alterna Play/Pause. Se o stream tiver sido interrompido,
-        chamar play() novamente garante retomada.
-        """
+
+        #Alterna Play/Pause. Se o stream tiver sido interrompido,
+        #chamar play() novamente garante retomada.
         try:
             if is_playing.current:
                 audio.pause()
@@ -149,7 +150,6 @@ def main(page: ft.Page):
                 print("Aviso: JSON não contém 'artist' ou 'title'")
                 return None, None
 
-            # print("executou")
             return artist, title
 
         except requests.exceptions.Timeout:
@@ -211,17 +211,16 @@ def main(page: ft.Page):
                 ft.Container(
                     alignment=ft.alignment.center,
                         content=ft.Text(
-                        value='Web Rádio',
+                        value='Online',
                         size=24,
                         weight=ft.FontWeight.BOLD,
                         text_align=ft.alignment.center,
-                        color=ft.Colors.with_opacity(0.8, '#00ebff'),
-                        # ref=text_state_play
+                        color=ft.Colors.with_opacity(0.9, '#00ebff'),
                     ),
                 ),
 
                 ft.Container(
-                    padding=ft.padding.only(top=120),
+                    margin=ft.margin.only(top=100),
                     content=ft.Column(
                         horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                         controls=[
@@ -232,62 +231,61 @@ def main(page: ft.Page):
                                 bgcolor=ft.Colors.with_opacity(0.3, '#00ebff'),
                                 border_radius=100,
                                 alignment=ft.alignment.center,
-                                content= ft.IconButton(
+                                content=ft.IconButton(
                                     icon=ft.Icons.PLAY_ARROW_ROUNDED,
                                     padding=5,
-                                    bgcolor=ft.Colors.with_opacity(0.8,'#001c2b'),
+                                    bgcolor=ft.Colors.with_opacity(0.8, '#001c2b'),
                                     icon_size=60,
                                     ref=play_icon_button,
                                     on_click=toggle_play_pause,
                                 ),
-                            ),
 
-                            ft.Container(expand=True, margin=30),
-
-    #                         # ---------- Títulos "Tocando agora, Artista e M´suica" ----------
-                            ft.Container(
-                                width=350,
-                                padding=ft.padding.only(top=20, bottom=20),
-                                border_radius=20,
-                                bgcolor=ft.Colors.with_opacity(0.3, '#000000'),
-                                content=ft.Column(
-                                    expand=True,
-                                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                                    controls=[
-                                        ft.Text(
-                                            value='Tocando agora',
-                                            color='#00ebff',
-                                            size=18,
-                                            weight=ft.FontWeight.BOLD,
-                                            text_align=ft.TextAlign.CENTER,
-                                        ),
-
-                                        ft.Text(
-                                            value='',
-                                            color='#00ebff',
-                                            size=14,
-                                            weight=ft.FontWeight.BOLD,
-                                            text_align=ft.TextAlign.CENTER,
-                                            ref=text_artist,
-                                        ),
-
-                                        ft.Text(
-                                            value='',
-                                            color='#00ebff',
-                                            size=14,
-                                            weight=ft.FontWeight.BOLD,
-                                            text_align=ft.TextAlign.CENTER,
-                                            ref=text_music
-                                        ),
-                                    ],
-                                ),
-                            ),
+                            )
                         ]
                     )
                 ),
 
-    #             # ---------- Espaçador para empurrar os botões sociais para o rodapé ----------
+                ft.Container(
+                    width=350,
+                    margin=ft.margin.only(top=110),
+                    padding=ft.padding.only(top=10, bottom=20),
+                    border_radius=20,
+                    bgcolor=ft.Colors.with_opacity(0.3, '#000000'),
+                    content=ft.Column(
+                        expand=True,
+                        horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                        controls=[
+                            ft.Text(
+                                value='Tocando agora',
+                                color='#00ebff',
+                                size=18,
+                                weight=ft.FontWeight.BOLD,
+                                text_align=ft.TextAlign.CENTER,
+                            ),
+
+                            ft.Text(
+                                value='',
+                                color='#00ebff',
+                                size=14,
+                                weight=ft.FontWeight.BOLD,
+                                text_align=ft.TextAlign.CENTER,
+                                ref=text_artist,
+                            ),
+
+                            ft.Text(
+                                value='',
+                                color='#00ebff',
+                                size=14,
+                                weight=ft.FontWeight.BOLD,
+                                text_align=ft.TextAlign.CENTER,
+                                ref=text_music
+                            ),
+                        ],
+                    ),
+                ),
+                # Empurra o conteúdo do próximo container para baixo
                 ft.Container(expand=True),
+
                 ft.Container(
                     padding=ft.padding.only(bottom=8),
                     content=ft.ResponsiveRow(
@@ -322,7 +320,6 @@ def main(page: ft.Page):
                         ],
                     ),
                 ),
-
             ]
         )
     )
@@ -341,12 +338,9 @@ def main(page: ft.Page):
 
     # threading.Thread(target=init_app, daemon=True).start()
 
-# ft.app(target=main)
 if __name__ == '__main__':
     ft.app(
         target=main,
         view=ft.AppView.FLET_APP,
         assets_dir='assets'
     )
-    # Observação:
-    # - Para Android, o empacotamento usa build de app nativo; ver instruções ao final.
